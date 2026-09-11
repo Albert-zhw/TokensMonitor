@@ -1,0 +1,14 @@
+# 机密与运行时文件 —— 绝对不要提交
+config.json
+config.json.*.bak
+config.json.*.tmp
+server.log
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+*.spec

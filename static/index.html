@@ -1,0 +1,348 @@
+<!doctype html>
+<!-- TokensMonitor · GPL-3.0 开源（见 LICENSE） -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10131a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>🪙 TokensMonitor</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🪙%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#10131a;--card:#181c26;--line:#242a38;--txt:#e8ecf3;--dim:#8a93a6;--ok:#34d399;--err:#f87171;--acc:#60a5fa;--hdr:rgba(16,19,26,.92);--tile:#161a25;--track:#252b3a;--ringtrack:#2a3142;--footc:#5b6375}
+body.light{--bg:#f4f6fb;--card:#ffffff;--line:#e2e6ef;--txt:#1c2230;--dim:#6b7280;--ok:#059669;--err:#dc2626;--acc:#2563eb;--hdr:rgba(244,246,251,.92);--tile:#eef1f7;--track:#e2e6ef;--ringtrack:#dfe3ec;--footc:#9aa2b1}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.6 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;padding-bottom:40px}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 20px;background:var(--hdr);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:18px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:8px}
+#summary{color:var(--dim);font-size:13px;font-weight:400}
+.btns{display:flex;gap:8px;align-items:center}
+.icobtn{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0;cursor:pointer;color:var(--txt)}
+.icobtn:hover{border-color:var(--acc)}
+.icobtn svg{display:block}
+#iconMoon{display:none}
+body.light #iconSun{display:none}
+body.light #iconMoon{display:block}
+.card.stale .dot{background:#fbbf24}
+.switch{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:13px;color:var(--dim)}
+.switch input{display:none}
+.switch .sl{position:relative;width:34px;height:18px;background:var(--track);border-radius:10px;transition:.2s;flex:none}
+.switch .sl::before{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--dim);border-radius:50%;transition:.2s}
+.switch input:checked+.sl{background:#3b82f6}
+.switch input:checked+.sl::before{transform:translateX(16px);background:#fff}
+.switch .lbl{color:var(--txt)}
+button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:14px;cursor:pointer}
+button:hover{border-color:var(--acc)}
+button:disabled{opacity:.5;cursor:default}
+main{max-width:1200px;margin:0 auto;padding:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 16px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card.err{border-color:#5c2a2a;background:#1d1516}
+body.light .card.err{border-color:#f3c1c1;background:#fdf2f2}
+.top{display:flex;align-items:center;gap:8px}
+.name{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:1px 6px;flex:none}
+.drag{cursor:grab;color:var(--footc);font-size:14px;line-height:1;padding:0 4px;user-select:none}
+.drag:active{cursor:grabbing}
+.card.drag-over{outline:2px dashed var(--acc);outline-offset:-2px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.card.err .dot{background:var(--err)}
+.bal{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;word-break:break-all}
+.bal small{font-size:13px;color:var(--dim);font-weight:400;margin-left:6px}
+.used{color:var(--dim);font-size:13px}
+.bar{height:5px;border-radius:3px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),#818cf8)}
+.extras{font-size:12px;color:var(--dim)}
+.extras div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.foot{display:flex;justify-content:space-between;align-items:center;color:var(--footc);font-size:11px;margin-top:4px;gap:8px}
+.reauth{background:transparent;border:1px solid var(--err);color:var(--err);padding:2px 8px;border-radius:6px;font-size:11px;cursor:pointer;text-decoration:none}
+.reauth:hover{background:var(--err);color:#fff}
+.emsg{font:12px/1.5 Consolas,monospace;color:var(--err);white-space:pre-wrap;word-break:break-all;max-height:120px;overflow:auto;background:var(--tile);padding:8px;border-radius:8px}
+.qrow{margin:2px 0 8px}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+.qhead span:last-child{color:var(--dim);font-size:12px;white-space:nowrap}
+.qnote{font-size:12px;color:var(--dim);margin-top:2px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.stat{background:var(--tile);padding:8px 10px;border-radius:8px;min-width:0}
+.stat .label{font-size:11px;color:var(--dim)}
+.stat .val{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;word-break:break-all}
+.stat .subs{margin-top:2px}
+.stat .sub{font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hint{color:var(--dim);text-align:center;margin-top:40px;line-height:2}
+#mask{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+#mask.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;width:min(760px,100%);display:flex;flex-direction:column;gap:10px;max-height:90vh}
+.modal h2{font-size:16px}
+textarea{width:100%;height:52vh;background:#0d1017;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:10px;font:13px/1.5 Consolas,monospace;resize:vertical}
+.mbtns{display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+.merr{color:var(--err);font-size:13px;flex:1;min-width:120px}
+.tip{font-size:12px;color:var(--dim);line-height:1.7}
+#login{display:none;gap:8px;align-items:center}
+#login.on{display:flex}
+#login input{background:#0d1017;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:7px 10px;width:140px}
+@media(max-width:600px){main{padding:12px}.grid{grid-template-columns:1fr}h1{font-size:16px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🪙 TokensMonitor</h1>
+  <div id="login"><input id="akey" type="password" placeholder="访问口令"><button onclick="saveKey()">确定</button></div>
+  <div class="btns">
+    <label class="switch" title="关闭后只在你点刷新时更新"><input type="checkbox" id="autoCk" checked><span class="sl"></span><span class="lbl">自动</span></label>
+    <button class="icobtn" onclick="refresh(true)" title="点击立即刷新">
+      <svg width="24" height="24" viewBox="0 0 38 38">
+        <circle id="ringBg" cx="19" cy="19" r="15" fill="none" stroke="var(--ringtrack)" stroke-width="6"></circle>
+        <circle id="ringFg" cx="19" cy="19" r="15" fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round" stroke-dasharray="94.2" stroke-dashoffset="0" transform="rotate(-90 19 19)" style="transition:stroke-dashoffset 1s linear, stroke 1.2s ease"></circle>
+      </svg>
+    </button>
+    <button class="icobtn" id="themeBtn" onclick="toggleTheme()" title="切换深色/浅色">
+      <svg id="iconSun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg id="iconMoon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <a class="icobtn" href="/ssseetinnggg" title="设置" style="text-decoration:none">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </a>
+  </div>
+</header>
+<main>
+  <div id="cards" class="grid"></div>
+  <div id="empty" class="hint" style="display:none"></div>
+</main>
+<footer style="max-width:1200px;margin:30px auto 0;padding:14px 20px;color:var(--footc);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">
+  <span>TokensMonitor</span>
+  <span>GPL-3.0 Open Source · Free to Use &amp; Modify</span>
+</footer>
+
+<div id="mask" onclick="if(event.target===this)closeCfg()">
+  <div class="modal">
+    <h2>编辑配置（config.json）</h2>
+    <div class="tip">
+      type 可选：<b>oneapi</b>（大多数中转站，sk- 令牌走计费接口）· <b>newapi</b>（new-api 站点，需系统访问令牌+user_id）·
+      <b>deepseek</b> · <b>siliconflow</b>（硅基流动）· <b>minimax</b>（Token Plan）· <b>custom</b>（任意接口，配 path/提取规则）。<br>
+      保存后立即生效；原配置会备份为 config.json.bak。详细说明见 README.md。
+    </div>
+    <textarea id="cfgText" spellcheck="false"></textarea>
+    <div class="tip" style="text-align:center">⚠ 保存会<strong>整份替换</strong>配置；加新账号前<strong>先复制下面"新增"按钮插入的模板</strong>，再一起保存。</div>
+    <div class="mbtns"><span class="merr" id="cfgErr"></span>
+      <button onclick="appendAcc('oneapi')" title="oneapi 中转站模板">+ oneapi</button>
+      <button onclick="appendAcc('newapi')" title="new-api 站点模板">+ newapi</button>
+      <button onclick="appendAcc('custom')" title="custom 自定义模板">+ custom</button>
+      <button onclick="closeCfg()">取消</button><button onclick="saveCfg()">保存并应用</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let REFRESH=300,TIMER=0,LOADING=false,AUTO=true;
+const $=id=>document.getElementById(id);
+const key=()=>localStorage.getItem('tm_key')||'';
+
+function applyAuto(){
+  AUTO=$('autoCk').checked;
+  if(AUTO){phaseT0=Date.now()}
+}
+$('autoCk').addEventListener('change',applyAuto);
+function isLight(){return document.body.classList.contains('light')}
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  localStorage.setItem('tm_theme',isLight()?'light':'dark');
+  updateRingColor();
+}
+function updateRingColor(){
+  // 偶数圈=主色（深/浅自适应），奇数圈=中性灰
+  const c = CYCLE%2===0 ? (isLight()?'#2563eb':'#60a5fa') : (isLight()?'#c3cad6':'#4a5468');
+  $('ringFg').setAttribute('stroke',c);
+}
+(function(){
+  if(localStorage.getItem('tm_theme')==='light'){document.body.classList.add('light')}
+  // 图标显隐由 CSS 控制
+})();
+function setRingPct(pct,transMs){
+  const circ=2*Math.PI*15;
+  $('ringFg').style.transition=`stroke-dashoffset ${transMs||1000}ms linear, stroke 1.2s ease`;
+  $('ringFg').setAttribute('stroke-dasharray',circ);
+  $('ringFg').setAttribute('stroke-dashoffset',circ*(1-pct));
+}
+
+async function api(path,opts={}){
+  opts.headers=Object.assign({'X-Access-Key':key()},opts.headers||{});
+  const r=await fetch(path,opts);
+  if(r.status===401){$('login').classList.add('on');throw new Error('unauthorized')}
+  $('login').classList.remove('on');
+  return r;
+}
+function fmtMoney(v,cur){
+  if(v==null)return '—';
+  const s=Number(v).toLocaleString(undefined,{maximumFractionDigits:4});
+  const sym=cur==='CNY'?'¥':(cur==='USD'?'$':'');
+  return sym?sym+s:s;
+}
+function fmtVal(v,prefix){
+  if(v==null)return '—';
+  const base=typeof v==='string'?v:Number(v).toLocaleString(undefined,{maximumFractionDigits:2});
+  return (prefix||'')+base;
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+let POLLS=0;
+async function refresh(manual){
+  if(LOADING)return;LOADING=true;
+  lastRefresh=Date.now();
+  try{
+    const r=await api('/api/status'+(manual?'?force=1':''));
+    const d=await r.json();
+    REFRESH=Math.max(10,d.refresh_seconds||60);PHASE_MS=REFRESH*1000;
+    render(d);
+    // 服务端后台刷新进行中：3 秒后补拉，卡片自动更新（最多补拉 10 次）
+    if(d.refreshing&&POLLS<10){POLLS++;setTimeout(()=>refresh(false),3000);}
+    else POLLS=0;
+  }catch(e){}
+  LOADING=false;
+}
+
+function render(d){
+  if(d.title){document.title='🪙 '+d.title;document.querySelector('h1').textContent='🪙 '+d.title;}
+  const list=d.accounts||[],totals={},errs=[];
+  let html='';
+  for(const a of list){
+    if(a.ok&&a.balance!=null){totals[a.currency]=(totals[a.currency]||0)+Number(a.balance||0)}
+    if(!a.ok)errs.push(a.name);
+    let body='';
+    if(a.ok){
+      const parts=[];
+      if(a.quotas&&a.quotas.length){
+        parts.push(a.quotas.map(q=>
+          `<div class="qrow"><div class="qhead"><span>${esc(q.label)}</span><span>${esc(q.text||'')}</span></div><div class="bar"><i style="width:${Math.min(100,q.pct||0)}%"></i></div>${q.note?`<div class="qnote">${esc(q.note)}</div>`:''}</div>`
+        ).join(''));
+      }else{
+        parts.push(`<div class="bal">${fmtMoney(a.balance,a.currency)}<small>${esc(a.balance_label||'余额')}</small></div>`);
+        const line=[];
+        if(a.used!=null)line.push('已用 '+fmtMoney(a.used,a.currency));
+        if(a.balance!=null&&a.used!=null&&Number(a.balance)+Number(a.used)>0){
+          const pct=Number(a.used)/(Number(a.used)+Number(a.balance))*100;
+          line.push('消耗 '+pct.toFixed(0)+'%');
+          parts.push(`<div class="bar"><i style="width:${Math.min(100,pct).toFixed(1)}%"></i></div>`);
+        }
+        if(line.length)parts.push(`<div class="used">${line.join(' · ')}</div>`);
+      }
+      if((a.stats||[]).length){
+        parts.push('<div class="stats">'+a.stats.map(s=>{
+          const subs=(s.sub||[]).map(t=>`<div class="sub">${esc(t.label)}: ${esc(fmtVal(t.value,t.prefix))}</div>`).join('');
+          return `<div class="stat"><div class="label">${esc(s.label)}</div><div class="val">${esc(fmtVal(s.value,s.prefix))}</div>${subs?`<div class="subs">${subs}</div>`:''}</div>`;
+        }).join('')+'</div>');
+      }
+      if((a.extra||[]).length)parts.push(`<div class="extras">${a.extra.map(e=>`<div>${esc(e.label)}: ${esc(e.value)}</div>`).join('')}</div>`);
+      body=parts.join('');
+    }else{
+      body=`<div class="emsg">${esc(a.error||'未知错误')}</div>`;
+    }
+    const reauthBtn = (!a.ok && a.reauth_url) ? `<a class="reauth" href="${esc(a.reauth_url)}" target="_blank" rel="noopener">🔑 重新登录</a>` : '';
+    if(a.stale){
+      a.extra=(a.extra||[]).concat([{label:'⚠ 本次查询失败，显示的是上次成功数据',value:String(a.stale_error||'').slice(0,80)}]);
+    }
+    html+=`<div class="card ${a.ok?'':'err'} ${a.stale?'stale':''}" draggable="true" data-name="${esc(a.name)}">
+      <div class="top"><span class="dot"></span><span class="name" title="${esc(a.name)}">${esc(a.name)}</span><span class="chip">${esc(a.type)}</span><span class="drag" title="拖拽排序">⋮⋮</span></div>
+      ${body}
+      <div class="foot"><span>${a.latency_ms!=null?a.latency_ms+' ms':''}</span><span style="display:flex;gap:8px;align-items:center">${esc(a.checked_at||'')}${reauthBtn}</span></div>
+    </div>`;
+  }
+  $('cards').innerHTML=html;
+  applyOrder();
+  // 汇总金额不显示在标题栏（保留显示用于调试，需要时打开 console 看）
+  const s=$('summary');if(s)s.remove();
+  const empty=$('empty');
+  if(!list.length){
+    empty.style.display='block';
+    empty.innerHTML='还没有配置任何账号。<br>点击右上角 ⚙️ 直接编辑配置，或修改程序目录下的 config.json（见 README.md）。<br>支持：oneapi 中转站 · newapi · DeepSeek · 硅基流动 · custom 自定义接口';
+  }else{
+    empty.style.display='none';
+  }
+}
+
+let PHASE='drain',phaseT0=Date.now(),PHASE_MS=60000;
+function setRingOffset(off,transMs){
+  const circ=2*Math.PI*15;
+  $('ringFg').style.transition=`stroke-dashoffset ${transMs||300}ms linear, stroke 1.2s ease`;
+  $('ringFg').setAttribute('stroke-dasharray',circ);
+  $('ringFg').setAttribute('stroke-dashoffset',off);
+}
+function ringTick(){
+  if(!AUTO)return;
+  const el=Date.now()-phaseT0, circ=2*Math.PI*15;
+  if(PHASE==='drain'){
+    // 消失：offset 0→+circ，蓝色末端沿顺时针回收
+    const p=el/PHASE_MS;
+    if(p>=1){PHASE='fill';phaseT0=Date.now();return}
+    setRingOffset(circ*p,300);
+  }else{
+    // 填充：offset -circ→0，蓝色末端沿同样的顺时针方向原路长回
+    const p=el/PHASE_MS;
+    if(p>=1){PHASE='drain';phaseT0=Date.now();return}
+    setRingOffset(-circ*(1-p),300);
+  }
+}
+setInterval(ringTick,250);
+// 数据刷新独立异步：每 REFRESH 秒拉一次，不阻塞、不受圆环相位影响
+let lastRefresh=Date.now();
+setInterval(()=>{ if(AUTO && Date.now()-lastRefresh>=REFRESH*1000){refresh()} },1000);
+
+function saveKey(){localStorage.setItem('tm_key',$('akey').value.trim());refresh()}
+
+async function openCfg(){
+  try{
+    const r=await api('/api/config');
+    const d=await r.json();
+    $('cfgText').value=JSON.stringify(d,null,2);
+    $('cfgErr').textContent='';
+    $('mask').classList.add('on');
+  }catch(e){}
+}
+function closeCfg(){$('mask').classList.remove('on')}
+async function saveCfg(){
+  let cfg;
+  try{cfg=JSON.parse($('cfgText').value)}
+  catch(e){$('cfgErr').textContent='JSON 语法错误: '+e.message;return}
+  try{
+    const r=await api('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){$('cfgErr').textContent=d.error||('保存失败 HTTP '+r.status);return}
+    closeCfg();refresh();
+  }catch(e){$('cfgErr').textContent=''+e}
+}
+function appendAcc(type){
+  let cfg;
+  try{cfg=JSON.parse($('cfgText').value)}
+  catch{cfg={accounts:[]}}
+  cfg.accounts=cfg.accounts||[];
+  const tpl=type==='custom'
+    ? {name:"新custom",type:"custom",base_url:"",key:"",query:{path:"/api/balance",balance:{path:"data.balance"},currency:"USD"}}
+    : type==='newapi'
+      ? {name:"新newapi",type:"newapi",base_url:"https://",key:"",user_id:0}
+      : {name:"新中转站",type:"oneapi",base_url:"https://",key:""};
+  cfg.accounts.push(tpl);
+  $('cfgText').value=JSON.stringify(cfg,null,2);
+}
+function applyOrder(){}  // 顺序以服务端 accounts 数组为准
+function saveOrder(){
+  const order=[...document.querySelectorAll('.card')].map(c=>c.dataset.name);
+  fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order})}).catch(()=>{});
+}
+(function(){
+  const g=$('cards');let src=null;
+  g.addEventListener('dragstart',e=>{const c=e.target.closest('.card');if(!c)return;src=c;c.style.opacity=.4;});
+  g.addEventListener('dragend',()=>{if(src){src.style.opacity='';src=null;}g.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));});
+  g.addEventListener('dragover',e=>{e.preventDefault();const c=e.target.closest('.card');if(!c||c===src)return;g.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));c.classList.add('drag-over');});
+  g.addEventListener('drop',e=>{
+    e.preventDefault();
+    const tgt=e.target.closest('.card');if(!tgt||tgt===src)return;
+    const rect=tgt.getBoundingClientRect();
+    const before=e.clientY<rect.top+rect.height/2;
+    g.insertBefore(src, before?tgt:tgt.nextSibling);
+    saveOrder();
+  });
+})();
+refresh();
+</script>
+</body>
+</html>
