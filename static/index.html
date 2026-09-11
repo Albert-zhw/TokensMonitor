@@ -335,6 +335,8 @@ function saveOrder(){
   g.addEventListener('dragover',e=>{e.preventDefault();const c=e.target.closest('.card');if(!c||c===src)return;g.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over'));c.classList.add('drag-over');});
   g.addEventListener('drop',e=>{
     e.preventDefault();
+    // 拖动跨越自动刷新时，src 节点已被重建脱离 DOM —— 忽略本次放置，防止重复卡片
+    if(!src||!src.isConnected)return;
     const tgt=e.target.closest('.card');if(!tgt||tgt===src)return;
     const rect=tgt.getBoundingClientRect();
     const before=e.clientY<rect.top+rect.height/2;

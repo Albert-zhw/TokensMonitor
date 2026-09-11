@@ -63,7 +63,13 @@ def load_config():
         print(f"[警告] config.json 解析失败({e})，使用默认配置")
         cfg = {}
     merged = {k: cfg.get(k, v) for k, v in DEFAULT_CONFIG.items() if k != "accounts"}
-    merged["accounts"] = cfg.get("accounts", []) or []
+    # 按名称去重（历史拖动 bug 可能产生重复卡片），保留首个
+    seen=set(); dedup=[]
+    for a in (cfg.get("accounts", []) or []):
+        n=a.get("name")
+        if n in seen: continue
+        seen.add(n); dedup.append(a)
+    merged["accounts"] = dedup
     with CONFIG_LOCK:
         CONFIG = merged
     return merged
@@ -388,8 +394,7 @@ def probe_siliconflow(acc):
                                            verify_ssl=acc.get("verify_ssl", True))
                     la = ((_parse_json(rawu) or {}).get("data") or {}).get("list") or []
                     kuse = sum(_to_float(it.get("grossUsage")) or 0 for it in la)
-                    if kuse:
-                        addst("今日用量", f"{kuse:.2f}K", prefix="")
+                    addst("今日用量", f"{kuse:.2f}K", prefix="")
                     _, rawb = http_request(base + "/panel-server/api/v1/bill/aggregate_amount?" + rng,
                                            headers=H, timeout=_timeout(),
                                            verify_ssl=acc.get("verify_ssl", True))
@@ -1246,8 +1251,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400, '{"error":"bad order"}')
             with CONFIG_LOCK:
                 cur = {a.get("name"): a for a in CONFIG.get("accounts", [])}
-                newlist = [cur[n] for n in order if n in cur]
-                newlist += [a for n, a in cur.items() if n not in order]
+                seen=set(); newlist=[]
+                for n in order:
+                    if n in cur and n not in seen:
+                        newlist.append(cur[n]); seen.add(n)
+                newlist += [a for n, a in cur.items() if n not in seen]
                 CONFIG["accounts"] = newlist
                 cfg_disk = json.loads(CONFIG_FILE.read_text(encoding="utf-8")) if CONFIG_FILE.exists() else {}
                 cfg_disk["accounts"] = newlist
